@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.SocialPlatforms.Impl;
 using UnityEngine.UI;
 
 public class MainManager : MonoBehaviour
@@ -11,6 +12,7 @@ public class MainManager : MonoBehaviour
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text bestScoreText;
     public GameObject GameOverText;
     
     private bool m_Started = false;
@@ -35,6 +37,12 @@ public class MainManager : MonoBehaviour
                 brick.PointValue = pointCountArray[i];
                 brick.onDestroyed.AddListener(AddPoint);
             }
+        }
+
+        if (GameManager.instance != null)
+        {
+            ScoreText.text = GameManager.instance.playerName + "'s " + $"Score : {m_Points}";
+            bestScoreText.text = "Best Score : " + GameManager.instance.scoreDatas[0].playerName + " : " + GameManager.instance.scoreDatas[0].score;
         }
     }
 
@@ -66,11 +74,68 @@ public class MainManager : MonoBehaviour
     {
         m_Points += point;
         ScoreText.text = $"Score : {m_Points}";
+        if (GameManager.instance != null) ScoreText.text = GameManager.instance.playerName + "'s " + $"Score : {m_Points}";
     }
 
     public void GameOver()
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+        CompareBestScore();
+        GameManager.instance.SaveScoreData();
+        GameManager.instance.SaveSettingsData();
+    }
+
+    void CompareBestScore()
+    {
+        if (GameManager.instance != null)
+        {
+            //catat score baru
+            ScoreData newScoreData = new ScoreData();
+            newScoreData.playerName = GameManager.instance.playerName;
+            newScoreData.difficulty = GameManager.instance.difficulty;
+            newScoreData.score = m_Points;
+
+            //kalo sudah ada highscore yang tercatat di posisi paling bawahnya
+            if (GameManager.instance.scoreDatas[GameManager.instance.scoreDatas.Length - 1] != null)
+            {
+                //kalo score baru lebih besar daripada highscore yang paling rendah, maka score baru akan gantikan posisi highscore yang paling rendah
+                if (newScoreData.score > GameManager.instance.scoreDatas[GameManager.instance.scoreDatas.Length - 1].score)
+                {
+                    GameManager.instance.scoreDatas[GameManager.instance.scoreDatas.Length - 1] = newScoreData;
+                    Debug.Log("Switched the lowest high score");
+                }
+            }
+            else if (GameManager.instance.scoreDatas[GameManager.instance.scoreDatas.Length - 1] == null)//kalo belum ada highscore yang tercatat di posisi paling bawahnya, langsung masukkan ke list
+            {
+                GameManager.instance.scoreDatas[GameManager.instance.scoreDatas.Length - 1] = newScoreData;
+                Debug.Log("Instantly insert to the List because null");
+            }
+
+            
+
+            //lanjut check bandingkan dengan highscore lebih di atasnya
+            for (int i = GameManager.instance.scoreDatas.Length-1; i > 0; i--)
+            {
+                if (GameManager.instance.scoreDatas[i-1] != null) //kalo sudah ada highscore yang tercatat di posisi atasnya
+                {
+                    if (GameManager.instance.scoreDatas[i].score > GameManager.instance.scoreDatas[i-1].score) //kalo highscore ini lebih besar daripada posisi di atasnya
+                    {
+                        //tukar posisi
+                        ScoreData tempScoreData = GameManager.instance.scoreDatas[i - 1];
+                        GameManager.instance.scoreDatas[i-1] = GameManager.instance.scoreDatas[i];
+                        GameManager.instance.scoreDatas[i] = tempScoreData;
+                        Debug.Log("Tukar Posisi Happen on Loop" + i);
+                    }
+                }
+                else if (GameManager.instance.scoreDatas[i-1] == null) //kalo belum ada highscore yang tercatat di posisi atasnya, langsung masukkan ke list
+                {
+                    GameManager.instance.scoreDatas[i] = newScoreData;
+                    Debug.Log("Instantly insert to the List Happen on Loop" +  i);
+                }
+            }
+            
+        }
+            
     }
 }

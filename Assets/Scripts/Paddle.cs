@@ -6,11 +6,16 @@ public class Paddle : MonoBehaviour
 {
     public float Speed = 2.0f;
     public float MaxMovement = 2.0f;
+    private float multiplier;
     
     // Start is called before the first frame update
     void Start()
     {
-        
+        if (GameManager.instance != null)
+        {
+            multiplier = GameManager.instance.difficulty;
+        }
+        else multiplier = 1.0f;
     }
 
     // Update is called once per frame
@@ -19,7 +24,7 @@ public class Paddle : MonoBehaviour
         float input = Input.GetAxis("Horizontal");
 
         Vector3 pos = transform.position;
-        pos.x += input * Speed * Time.deltaTime;
+        pos.x += input * Speed * Time.deltaTime * multiplier;
 
         if (pos.x > MaxMovement)
             pos.x = MaxMovement;
